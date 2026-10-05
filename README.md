@@ -1,103 +1,141 @@
 # agent-starter
 
-A vendor-neutral **team engineering foundation for humans + AI coding agents**.
-It contains no application code. Use it as a GitHub template (or copy it into an
-existing repository) so developers using Claude Code, Codex, Cursor, Kilo Code,
-Kiro, Windsurf, Copilot, or future tools can work on the same codebase under one
-shared contract.
+A vendor-neutral starting point for teams where developers use different AI
+coding agents (Claude Code, Codex, Cursor, Kilo Code, Kiro, Windsurf, Copilot,
+and whatever comes next) on the same codebase. It holds rules, workflows and
+templates only. There is no application code.
 
-## Why vendor-neutral
-Tools change; teams mix them. Per-tool rule files drift apart and contradict each
-other, and AI chat history is invisible to teammates. This repo fixes that with:
+## Author
 
-- **One contract**: `AGENTS.md` is the canonical instruction file. Do not copy it into
-  `CLAUDE.md`, `.cursorrules`, etc. Codex, Cursor, Copilot, Kilo, Windsurf and others read
-  `AGENTS.md` natively or can be pointed to it; Claude Code can use a one-line pointer file
-  if needed (see [`.ai/README.md`](.ai/README.md)).
-- **Repository = memory.** Conversation history is temporary and local. Anything the team needs
-  later goes in Git (docs, ADRs, issues, PRs).
-- **GitHub = coordination.** Agents and people collaborate via issues, branches, PRs, ADRs, and test results.
+Ahmed Sadek
+
+## How it works
+
+All agents follow one file, `AGENTS.md`. Do not copy it into `CLAUDE.md`,
+`.cursorrules` or similar. Detail that is not needed for every task lives in
+`.ai/` and `docs/`, and `AGENTS.md` links to it.
+
+| Idea | Rule |
+| --- | --- |
+| One contract | `AGENTS.md` is the only instruction file. It stays at 200 lines or fewer. |
+| Repository is memory | Chat history is temporary and local. Anything the team needs later goes in Git. |
+| GitHub is coordination | People and agents work through issues, branches, PRs, ADRs and test results. |
+| One task | One issue, one branch, optionally one worktree, one primary agent per worktree. |
 
 | Role | Responsibility |
-|---|---|
+| --- | --- |
 | AI agent | Implementation assistant |
 | Developer | Owner of the change |
 | Reviewer | Independent quality gate |
-| Repository | Durable shared knowledge |
-| AI conversation | Temporary working context |
 
-## Quick Start for a New Project
-1. Click **Use this template** on GitHub (or copy these files into your repo, never overwriting existing ones).
-2. Edit `.ai/project.json`: set `project.*`, `technology.*`, and **only real, verified** `commands.*`
-   (leave `null` if unknown). Then set `"templateMode": false`.
-3. Run `python scripts/ai/validate_governance.py` (needs only Python 3).
-4. Copy `.github/CODEOWNERS.example` to `.github/CODEOWNERS` with real owners.
-5. Fill in `SECURITY.md` (contact) and `docs/architecture/README.md`.
-6. Complete the GitHub checklist below.
-7. Commit through a PR; the `AI Governance` workflow must pass.
+## Layout
 
-## Repository structure
+| Path | Contents |
+| --- | --- |
+| `AGENTS.md` | The canonical agent contract. |
+| `.ai/project.json` | Stack and commands for this project (metadata only). |
+| `.ai/policies/` | Security, git, testing, change control, documentation, collaboration. |
+| `.ai/workflows/` | Task execution, features, bugs, refactoring, code review, incidents. |
+| `.ai/templates/` | Implementation plan, ADR, handoff, investigation. |
+| `docs/` | `architecture/`, `decisions/` (ADRs), `development/`. |
+| `scripts/ai/validate_governance.py` | Checks the files above. Python 3 standard library only. |
+| `.github/` | PR and issue templates, `CODEOWNERS.example`, governance workflow. |
+| `CONTRIBUTING.md`, `SECURITY.md` | Contribution workflow and vulnerability reporting. |
+
+### Setup
+
+Click **Use this template**, or copy these files into an existing repository
+without overwriting anything.
+
+1. Edit `.ai/project.json`. Fill in the project and technology fields and only
+   commands you have run. Leave unknown commands as `null`.
+2. Set `"templateMode": false`.
+3. Copy `.github/CODEOWNERS.example` to `.github/CODEOWNERS` and use real owners.
+4. Add a security contact to `SECURITY.md`.
+5. Describe the architecture in `docs/architecture/README.md`.
+
+### Check the files
+
 ```
-AGENTS.md            canonical agent contract (<= 200 lines)
-CONTRIBUTING.md      human + AI contribution workflow
-SECURITY.md          vulnerability reporting
-.ai/                 project.json, policies/, workflows/, templates/
-docs/                architecture/, decisions/ (ADRs), development/
-scripts/ai/          validate_governance.py (stdlib only)
-.github/             PR + issue templates, CODEOWNERS.example, governance CI
+python scripts/ai/validate_governance.py
 ```
-Existing project files are never required to move; add governance alongside them.
 
-## Git workflow
-One task = one issue + one branch + (optionally) one worktree + one primary agent per worktree.
-Branches: `feature|fix|refactor|docs|chore/<issue-id>-<short-name>`. Conventional Commits.
-`main` is protected: PR required, no direct or force pushes. Full rules: [`.ai/policies/git.md`](.ai/policies/git.md).
+It prints errors and exits with code 1 when something is wrong, otherwise 0.
+The same check runs in CI as `validate-governance`. It never runs commands from
+`project.json`. Your project's own build and test pipeline is separate.
 
-## Worktree workflow
+### Git workflow
+
+Branch names are `feature|fix|refactor|docs|chore/<issue-id>-<short-name>`.
+Commits follow Conventional Commits. `main` takes changes through PRs only, with
+no direct or force pushes. An agent never merges its own work unless a human
+explicitly tells it to. Details are in `.ai/policies/git.md`.
+
+For parallel work give each task its own worktree:
+
 ```
-git worktree add ../myrepo-123 -b feature/123-auth origin/main   # Dev A + Claude Code
-git worktree add ../myrepo-124 -b feature/124-api  origin/main   # Dev B + Codex
-git worktree add ../myrepo-125 -b fix/125-ui       origin/main   # Dev C + Cursor
-git worktree remove ../myrepo-123                                # after merge
+git worktree add ../myrepo-123 -b feature/123-auth origin/main
+git worktree add ../myrepo-124 -b feature/124-api  origin/main
+git worktree remove ../myrepo-123      # after the PR is merged
 ```
-Never run two agents in one worktree, and never modify another person's worktree.
 
-## AI-agent workflow
-Understand -> Plan (TRIVIAL / STANDARD / HIGH RISK) -> Implement -> Verify -> Review -> Report.
-Details: [`AGENTS.md`](AGENTS.md) and [`.ai/workflows/`](.ai/workflows/). Task context goes in the
-**AI-assisted task** issue template so any teammate or agent can pick it up.
+Never run two agents in one worktree or touch another person's worktree.
 
-## Human approval boundaries
-Agents stop and ask before destructive data operations, production changes, real credentials,
-auth/security-control changes, irreversible migrations, force pushes/history rewrites, repo security
-settings, broader CI permissions, bypassing failing checks, or out-of-scope changes.
-The full list is in `AGENTS.md` section 13.
+### How agents work
 
-## Customizing
-- **Project rules**: put universal rules in `AGENTS.md` only if they apply to every task; otherwise add a file under
-  `.ai/policies/` or `.ai/workflows/` and link it from `AGENTS.md`. Keep `AGENTS.md` <= 200 lines.
-- **Nested `AGENTS.md`**: for large repos add `backend/AGENTS.md`, `frontend/AGENTS.md`, `infrastructure/AGENTS.md`, etc.
-  They contain **only additional rules for that subtree**; never copy the root policy. Closest file wins, but they can never
-  weaken security or Git safety rules.
-- **ADRs**: copy `.ai/templates/adr.md` to `docs/decisions/NNNN-short-title.md`, set status, add it to the index
-  in `docs/decisions/README.md`, and get it reviewed.
-- **Tool adapters**: only if a tool cannot read `AGENTS.md`. Make a thin, labeled, reviewed pointer; no duplicated policy.
-- **Legacy codebases**: adopt by adding these files alongside existing ones; do not rewrite, modernize, or re-tool.
+Understand, plan, implement, verify, review the diff, report. Tasks are
+classified as trivial, standard or high risk. High risk work needs a written
+plan and a human approval before anything irreversible. Put task context in the
+**AI-assisted task** issue template so another person or agent can pick it up
+without your chat. See `AGENTS.md` and `.ai/workflows/`.
 
-## GitHub protection and security checklist
-These are repository settings that this template cannot apply for you. Configure them under
-**Settings** (or via an authenticated admin); do not assume they are on:
+Agents must stop and ask first for: destructive data operations, production
+changes, real credentials, auth or security-control changes, irreversible
+migrations, force pushes, repository security settings, wider CI permissions,
+bypassing failing checks, and anything outside the task. The full list is in
+`AGENTS.md`.
 
-- [ ] Default branch is `main`
-- [ ] Branch protection / ruleset on `main`: require PR, >= 1 approving review, require status check
-      `validate-governance` (job in `AI Governance`), block force pushes, block deletion
-- [ ] Require review from code owners (after creating `.github/CODEOWNERS`)
-- [ ] Secret scanning and push protection enabled
-- [ ] Dependabot alerts / security updates (where appropriate for your stack)
-- [ ] Private vulnerability reporting enabled
-- [ ] Default workflow token permissions set to read-only
+### Customizing
 
-## What must NEVER be committed
-Secrets, API keys, tokens, passwords, certificates, `.env` files, cloud/SSH credentials, AI chat
-transcripts or session dumps, hidden agent memory, local MCP/IDE/agent configuration, private local paths,
-personal preferences, or customer/business-sensitive data. See [`SECURITY.md`](SECURITY.md).
+| To do this | Do this |
+| --- | --- |
+| Add a project rule | If it applies to every task, add it to `AGENTS.md`. Otherwise add a file under `.ai/policies/` or `.ai/workflows/` and link it. |
+| Add rules for one folder | Add a nested `AGENTS.md` (for example `backend/AGENTS.md`) with only the extra rules for that folder. Never copy the root file. It cannot weaken security or git rules. |
+| Record a decision | Copy `.ai/templates/adr.md` to `docs/decisions/NNNN-short-title.md`, add it to the index there, get it reviewed. |
+| Support a tool that ignores `AGENTS.md` | Add a thin adapter (for example `.cursor/rules/`) that points to `AGENTS.md`, is labeled vendor-specific, and is reviewed like code. The validator rejects adapters over 15 lines. |
+| Adopt in a legacy repo | Add these files alongside the existing ones. Do not re-tool or modernize unrelated code. |
+
+Changes to `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, `.ai/policies/` and
+the governance workflow need review by another team member.
+
+### GitHub settings
+
+These are repository settings that files cannot apply. Set them yourself under
+**Settings** and do not assume they are on.
+
+- [ ] Default branch is `main`.
+- [ ] Branch protection on `main`: PR required, at least one approval, required
+      check `validate-governance`, no force pushes, no deletion.
+- [ ] Code owner review required (after creating `.github/CODEOWNERS`).
+- [ ] Secret scanning and push protection on.
+- [ ] Dependabot alerts and security updates, if they fit your stack.
+- [ ] Private vulnerability reporting on.
+- [ ] Default workflow token permissions set to read-only.
+
+### Never commit
+
+Secrets, API keys, tokens, passwords, certificates, `.env` files, cloud or SSH
+credentials, AI chat transcripts or session dumps, local MCP, IDE or agent
+configuration, private local paths, personal preferences, and customer or
+business data. `.gitignore` covers the common cases.
+
+### Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `AGENTS.md has N lines (limit 200)` | Move detail into `.ai/` or `docs/` and link to it. |
+| `vendor-specific policy file does not reference AGENTS.md` | A `CLAUDE.md`, `.cursorrules` or similar file exists. Reduce it to a short pointer to `AGENTS.md`, or delete it. |
+| `templateMode is false but project.name is still TBD` | Fill in the project fields in `.ai/project.json`. |
+| `CODEOWNERS still contains placeholder owners` | Replace the `@ORG/...` handles with real users or teams. |
+| `possible secret detected` | Remove the value from the file and revoke the credential. Deleting it from history alone is not enough. |
+| `broken relative link` | The linked file moved or does not exist. Fix the path. |
